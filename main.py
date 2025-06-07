@@ -2,7 +2,7 @@ import os
 import httpx
 import bcrypt
 import jwt
-from fastapi import FastAPI, Depends, HTTPException, Form
+from fastapi import FastAPI, Depends, HTTPException, Form, Header
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from dotenv import load_dotenv
@@ -53,10 +53,23 @@ def verificar_token(token: str = Depends(oauth2_scheme)):
     except jwt.JWTError:
         raise HTTPException(status_code=401, detail="Token inválido")
 
+# Função para verificar token opcional (para o primeiro usuário)
+def verificar_token_optional(authorization: str = Header(None)):
+    if authorization is None:
+        return None
+    try:
+        scheme, token = authorization.split()
+        if scheme.lower() != "bearer":
+            raise ValueError
+        payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
+        return payload
+    except Exception:
+        return None
+
 @app.post("/token")
-async def login(username: str = Form(...), password: str = Form(...)):
+async def login(email: str = Form(...), password: str = Form(...)):
     async with httpx.AsyncClient() as client:
-        query = f"?username=eq.{username}"
+        query = f"?email=eq.{email}"
         url = f"{SUPABASE_URL}{query}"
         r = await client.get(url, headers=HEADERS)
 
@@ -72,7 +85,7 @@ async def login(username: str = Form(...), password: str = Form(...)):
         if not hashed_password or not bcrypt.checkpw(password.encode("utf-8"), hashed_password.encode("utf-8")):
             raise HTTPException(status_code=401, detail="Usuário ou senha inválidos")
 
-        token = criar_token({"sub": username, "cria_usuario": user.get("cria_usuario", False)})
+        token = criar_token({"sub": email, "cria_usuario": user.get("cria_usuario", False)})
 
         return {"access_token": token, "token_type": "bearer", "cria_usuario": user.get("cria_usuario", False)}
 
@@ -87,17 +100,36 @@ async def listar_acessos(payload: dict = Depends(verificar_token)):
 @app.post("/criar_usuario")
 async def criar_usuario(
     novo_username: str = Form(...),
+    email: str = Form(...),
     nova_senha: str = Form(...),
-    payload: dict = Depends(verificar_token)
+    cria_usuario: bool = Form(...),
+    payload: dict = Depends(verificar_token_optional)
 ):
-    if not payload.get("cria_usuario"):
-        raise HTTPException(status_code=403, detail="Você não tem permissão para criar usuários")
+    # Verificar se já existe algum usuário no sistema
+    async with httpx.AsyncClient() as client:
+        r_check = await client.get(SUPABASE_URL, headers=HEADERS)
+        if r_check.status_code != 200:
+            raise HTTPException(status_code=r_check.status_code, detail=r_check.text)
+        data = r_check.json()
 
+    primeiro_usuario = len(data) == 0
+
+    # Se não for o primeiro usuário, precisa validar token e permissão
+    if not primeiro_usuario:
+        if payload is None:
+            raise HTTPException(status_code=401, detail="Not authenticated")
+        if not payload.get("cria_usuario"):
+            raise HTTPException(status_code=403, detail="Você não tem permissão para criar usuários")
+
+    # Gerar hash da senha
     hashed_password = bcrypt.hashpw(nova_senha.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
+
+    # Criar usuário no Supabase
     novo_usuario = {
         "username": novo_username,
+        "email": email,
         "password": hashed_password,
-        "cria_usuario": False
+        "cria_usuario": cria_usuario
     }
 
     async with httpx.AsyncClient() as client:
