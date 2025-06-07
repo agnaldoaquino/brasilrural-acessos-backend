@@ -15,7 +15,10 @@ app = FastAPI()
 # Liberação de CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://brasilrural-acessos-frontend.vercel.app",
+        "http://localhost:5173"  # se você testa localmente
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -26,6 +29,7 @@ oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 SECRET_KEY = os.getenv("SECRET_KEY")
+SUPABASE_ACESSOS_URL = os.getenv("SUPABASE_ACESSOS_URL")
 
 if not SUPABASE_KEY or not SUPABASE_URL or not SECRET_KEY:
     raise ValueError("Variáveis de ambiente não carregadas corretamente. Verifique o .env")
@@ -92,7 +96,7 @@ async def login(email: str = Form(...), password: str = Form(...)):
 @app.get("/acessos")
 async def listar_acessos(payload: dict = Depends(verificar_token)):
     async with httpx.AsyncClient() as client:
-        r = await client.get(f"{SUPABASE_URL}/acessos", headers=HEADERS)
+        r = await client.get(SUPABASE_ACESSOS_URL, headers=HEADERS)
         if r.status_code != 200:
             raise HTTPException(status_code=r.status_code, detail=r.text)
         return r.json()
