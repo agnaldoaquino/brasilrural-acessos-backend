@@ -17,7 +17,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://brasilrural-acessos-frontend.vercel.app",
-        "http://localhost:5173"  # se você testa localmente
+        "http://localhost:5173",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -31,7 +31,7 @@ SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 SECRET_KEY = os.getenv("SECRET_KEY")
 SUPABASE_ACESSOS_URL = os.getenv("SUPABASE_ACESSOS_URL")
 
-if not SUPABASE_KEY or not SUPABASE_URL or not SECRET_KEY:
+if not SUPABASE_KEY or not SUPABASE_URL or not SECRET_KEY or not SUPABASE_ACESSOS_URL:
     raise ValueError("Variáveis de ambiente não carregadas corretamente. Verifique o .env")
 
 HEADERS = {
@@ -47,7 +47,7 @@ def criar_token(dados: dict, expires_delta: timedelta = timedelta(hours=1)):
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm="HS256")
 
-# Função para verificar o token JWT
+# Função para verificar token com OAuth2 (obrigatório)
 def verificar_token(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
@@ -57,14 +57,14 @@ def verificar_token(token: str = Depends(oauth2_scheme)):
     except jwt.JWTError:
         raise HTTPException(status_code=401, detail="Token inválido")
 
-# Função para verificar token opcional (para o primeiro usuário)
+# Função para verificar token opcional (para criar primeiro usuário ou rotas públicas)
 def verificar_token_optional(authorization: str = Header(None)):
     if authorization is None:
         return None
     try:
-        scheme, token = authorization.split()
-        if scheme.lower() != "bearer":
+        if not authorization.lower().startswith("bearer "):
             raise ValueError
+        token = authorization.split(" ", 1)[1]
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         return payload
     except Exception:
