@@ -102,6 +102,18 @@ async def listar_acessos(payload: dict = Depends(verificar_token)):
             raise HTTPException(status_code=r.status_code, detail=r.text)
         return r.json()
 
+@app.get("/usuarios")
+async def listar_usuarios(payload: dict = Depends(verificar_token)):
+    async with httpx.AsyncClient() as client:
+        r = await client.get(SUPABASE_URL, headers=HEADERS)
+        if r.status_code != 200:
+            raise HTTPException(status_code=r.status_code, detail=r.text)
+        
+        usuarios = r.json()
+        # Se você quiser, pode filtrar campos aqui — por enquanto retorna tudo
+        return usuarios
+
+
 @app.post("/criar_usuario")
 async def criar_usuario(
     request: Request,
