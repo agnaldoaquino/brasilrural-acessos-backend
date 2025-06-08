@@ -7,6 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
+from jwt.exceptions import InvalidTokenError  # <-- importação correta
 
 load_dotenv()
 
@@ -48,15 +49,15 @@ def criar_token(dados: dict, expires_delta: timedelta = timedelta(hours=1)):
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, SECRET_KEY, algorithm="HS256")
 
-# Função para verificar token com OAuth2 (obrigatório)
+# Função para verificar token com OAuth2 (obrigatório) --> corrigida!
 def verificar_token(token: str = Depends(oauth2_scheme)):
     try:
         payload = jwt.decode(token, SECRET_KEY, algorithms=["HS256"])
         return payload
     except jwt.ExpiredSignatureError:
         raise HTTPException(status_code=401, detail="Token expirado")
-    except jwt.JWTError:
-        raise HTTPException(status_code=401, detail="Token inválido")
+    except InvalidTokenError:
+        raise HTTPException(status_code=401, detail="Token inválido ou corrompido")
 
 # Função para verificar token opcional (para criar primeiro usuário ou rotas públicas)
 def verificar_token_optional(authorization: str = Header(None)):
@@ -112,7 +113,6 @@ async def listar_usuarios(payload: dict = Depends(verificar_token)):
         usuarios = r.json()
         # Se você quiser, pode filtrar campos aqui — por enquanto retorna tudo
         return usuarios
-
 
 @app.post("/criar_usuario")
 async def criar_usuario(
