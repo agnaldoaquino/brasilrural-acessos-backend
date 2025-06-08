@@ -2,7 +2,7 @@ import os
 import httpx
 import bcrypt
 import jwt
-from fastapi import FastAPI, Depends, HTTPException, Form, Header
+from fastapi import FastAPI, Depends, HTTPException, Form, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.security import OAuth2PasswordBearer
 from dotenv import load_dotenv
@@ -103,12 +103,15 @@ async def listar_acessos(payload: dict = Depends(verificar_token)):
 
 @app.post("/criar_usuario")
 async def criar_usuario(
-    novo_username: str = Form(...),
-    email: str = Form(...),
-    nova_senha: str = Form(...),
-    cria_usuario: bool = Form(...),
+    request: Request,
     payload: dict = Depends(verificar_token_optional)
 ):
+    body = await request.json()
+    novo_username = body.get("novo_username")
+    email = body.get("email")
+    nova_senha = body.get("nova_senha")
+    cria_usuario = body.get("cria_usuario", False)
+
     # Verificar se já existe algum usuário no sistema
     async with httpx.AsyncClient() as client:
         r_check = await client.get(SUPABASE_URL, headers=HEADERS)
