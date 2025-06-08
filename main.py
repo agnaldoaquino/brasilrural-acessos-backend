@@ -17,6 +17,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "https://brasilrural-acessos-frontend.vercel.app",
+        "https://brasilrural-acessos-frontend-ien3wi39k-brasil-rurals-projects.vercel.app",
         "http://localhost:5173",
     ],
     allow_credentials=True,
