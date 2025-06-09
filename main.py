@@ -120,9 +120,9 @@ async def criar_usuario(
     payload: dict = Depends(verificar_token_optional)
 ):
     body = await request.json()
-    novo_username = body.get("novo_username")
+    username = data.get("username")
     email = body.get("email")
-    nova_senha = body.get("nova_senha")
+    nova_senha = body.get("password")
     cria_usuario = body.get("cria_usuario", False)
 
     # Verificar se já existe algum usuário no sistema
