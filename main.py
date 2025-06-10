@@ -120,7 +120,7 @@ async def criar_usuario(
     payload: dict = Depends(verificar_token_optional)
 ):
     body = await request.json()
-    username = data.get("username")
+    username = body.get("username")
     email = body.get("email")
     nova_senha = body.get("password")
     cria_usuario = body.get("cria_usuario", False)
@@ -146,7 +146,7 @@ async def criar_usuario(
 
     # Criar usuário no Supabase
     novo_usuario = {
-        "username": novo_username,
+        "username": username,
         "email": email,
         "password": hashed_password,
         "cria_usuario": cria_usuario
