@@ -109,10 +109,9 @@ async def listar_acessos(payload: dict = Depends(verificar_token)):
 async def atualizar_acesso(id: str, acesso_update: AcessoUpdate, payload: dict = Depends(verificar_token)):
     async with httpx.AsyncClient() as client:
         r = await client.patch(
-            SUPABASE_ACESSOS_URL,
+            f"{SUPABASE_ACESSOS_URL}?id=eq.{id}",
             headers={**HEADERS, "Prefer": "return=representation"},
-            params={"id": f"eq.{id}"},
-            json=acesso_update.dict(exclude_unset=True, exclude_none=False),
+            json=acesso_update.model_dump(exclude_unset=True),
         )
         if r.status_code not in (200, 204):
             raise HTTPException(status_code=r.status_code, detail=r.text)
