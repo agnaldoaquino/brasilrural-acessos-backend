@@ -121,6 +121,7 @@ async def atualizar_acesso(id: str, acesso_update: AcessoUpdate, payload: dict =
         r = await client.patch(
             f"{SUPABASE_ACESSOS_URL}?id=eq.{id}",
             headers={**HEADERS, "Prefer": "return=representation"},
+            params={"id": f"eq.{id}"},
             json=dados
         )
         if r.status_code not in (200, 204):
