@@ -107,11 +107,16 @@ async def listar_acessos(payload: dict = Depends(verificar_token)):
 
 @app.put("/acessos/{id}")
 async def atualizar_acesso(id: str, acesso_update: AcessoUpdate, payload: dict = Depends(verificar_token)):
+    dados = acesso_update.model_dump(exclude_none=True)
+
+    if not dados:
+        raise HTTPException(status_code=422, detail="Nenhum campo fornecido para atualização.")
+
     async with httpx.AsyncClient() as client:
         r = await client.patch(
             f"{SUPABASE_ACESSOS_URL}?id=eq.{id}",
             headers={**HEADERS, "Prefer": "return=representation"},
-            json=acesso_update.model_dump(exclude_unset=True),
+            json=dados
         )
         if r.status_code not in (200, 204):
             raise HTTPException(status_code=r.status_code, detail=r.text)
