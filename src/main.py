@@ -9,6 +9,7 @@ from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from jwt.exceptions import InvalidTokenError
 from src.models import AcessoUpdate
+from uuid import UUID
 
 
 load_dotenv()
@@ -108,6 +109,7 @@ async def listar_acessos(payload: dict = Depends(verificar_token)):
 @app.put("/acessos/{id}")
 async def atualizar_acesso(id: str, acesso_update: AcessoUpdate, payload: dict = Depends(verificar_token)):
     dados = acesso_update.model_dump(exclude_none=True)
+    dados["id"] = id
     print(">> RECEBIDO ID:", id)
     print(">> RECEBIDO UPDATE:", acesso_update)
     print(">> PAYLOAD BRUTO:", payload)
