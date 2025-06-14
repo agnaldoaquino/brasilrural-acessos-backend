@@ -108,6 +108,9 @@ async def listar_acessos(payload: dict = Depends(verificar_token)):
 @app.put("/acessos/{id}")
 async def atualizar_acesso(id: str, acesso_update: AcessoUpdate, payload: dict = Depends(verificar_token)):
     dados = acesso_update.model_dump(exclude_none=True)
+    print(">> RECEBIDO ID:", id)
+    print(">> RECEBIDO UPDATE:", acesso_update)
+    print(">> PAYLOAD BRUTO:", payload)
 
     if not dados:
         raise HTTPException(status_code=422, detail="Nenhum campo enviado para atualização.")
