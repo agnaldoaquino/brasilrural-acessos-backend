@@ -10,3 +10,4 @@ class AcessoUpdate(BaseModel):
     cnpj: Optional[str]
     contato: Optional[str]
     observacao: Optional[str]
+    atualizado_por: Optional[str] 
