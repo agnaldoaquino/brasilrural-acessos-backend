@@ -112,7 +112,7 @@ async def atualizar_acesso(id: str, acesso_update: AcessoUpdate, payload: dict =
             SUPABASE_ACESSOS_URL,
             headers={**HEADERS, "Prefer": "return=representation"},
             params={"id": f"eq.{id}"},
-            json=acesso_update.dict(exclude_unset=True),
+            json=acesso_update.dict(exclude_unset=True, exclude_none=False),
         )
         if r.status_code not in (200, 204):
             raise HTTPException(status_code=r.status_code, detail=r.text)

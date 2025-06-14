@@ -2,6 +2,7 @@ from pydantic import BaseModel
 from typing import Optional
 
 class AcessoUpdate(BaseModel):
+    id: Optional[str]
     acesso: Optional[str]
     empresa: Optional[str]
     usuario: Optional[str]
