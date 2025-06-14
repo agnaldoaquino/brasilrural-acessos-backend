@@ -110,7 +110,7 @@ async def atualizar_acesso(id: str, acesso_update: AcessoUpdate, payload: dict =
     dados = acesso_update.model_dump(exclude_none=True)
 
     if not dados:
-        raise HTTPException(status_code=422, detail="Nenhum campo fornecido para atualização.")
+        raise HTTPException(status_code=422, detail="Nenhum campo enviado para atualização.")
 
     async with httpx.AsyncClient() as client:
         r = await client.patch(
