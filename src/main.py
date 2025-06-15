@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from jwt.exceptions import InvalidTokenError
 from src.models import AcessoUpdate
 from uuid import UUID
+from models import AcessoCreate, AcessoUpdate
 
 
 load_dotenv()
@@ -129,7 +130,7 @@ async def atualizar_acesso(id: str, acesso_update: AcessoUpdate, payload: dict =
         return r.json() if r.status_code == 200 else {"detail": "Atualizado com sucesso."}
 
 @app.post("/acessos")
-async def criar_acesso(acesso: Acesso, payload: dict = Depends(verificar_token)):
+async def criar_acesso(acesso: AcessoCreate, payload: dict = Depends(verificar_token)):
     async with httpx.AsyncClient() as client:
         r = await client.post(
             SUPABASE_ACESSOS_URL,
