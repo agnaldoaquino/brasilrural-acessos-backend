@@ -145,9 +145,9 @@ async def criar_acesso(acesso: AcessoCreate, payload: dict = Depends(verificar_t
 async def deletar_acesso(id: str, payload: dict = Depends(verificar_token)):
     async with httpx.AsyncClient() as client:
         r = await client.delete(
-            f"{SUPABASE_ACESSOS_URL}?id=eq.{id}",
-            headers=HEADERS
-        )
+    f"{SUPABASE_ACESSOS_URL}?id=eq.{id}",
+    headers={**HEADERS, "Prefer": "return=representation"}
+)
 
     if r.status_code not in (200, 204):
         raise HTTPException(status_code=r.status_code, detail=r.text)
