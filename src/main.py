@@ -8,7 +8,7 @@ from fastapi.security import OAuth2PasswordBearer
 from dotenv import load_dotenv
 from datetime import datetime, timedelta
 from jwt.exceptions import InvalidTokenError
-from src.models import AcessoUpdate
+from models import AcessoUpdate
 from uuid import UUID
 from models import AcessoCreate, AcessoUpdate
 
