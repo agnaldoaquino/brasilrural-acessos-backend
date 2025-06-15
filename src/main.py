@@ -128,6 +128,34 @@ async def atualizar_acesso(id: str, acesso_update: AcessoUpdate, payload: dict =
             raise HTTPException(status_code=r.status_code, detail=r.text)
         return r.json() if r.status_code == 200 else {"detail": "Atualizado com sucesso."}
 
+@app.post("/acessos")
+async def criar_acesso(acesso: Acesso, payload: dict = Depends(verificar_token)):
+    async with httpx.AsyncClient() as client:
+        r = await client.post(
+            SUPABASE_ACESSOS_URL,
+            headers={**HEADERS, "Prefer": "return=representation"},
+            json=acesso.model_dump(exclude_unset=True)
+        )
+
+    if r.status_code != 201:
+        raise HTTPException(status_code=500, detail="Erro ao criar acesso")
+
+    return r.json()
+
+@app.delete("/acessos/{id}")
+async def deletar_acesso(id: str, payload: dict = Depends(verificar_token)):
+    async with httpx.AsyncClient() as client:
+        r = await client.delete(
+            f"{SUPABASE_ACESSOS_URL}?id=eq.{id}",
+            headers=HEADERS
+        )
+
+    if r.status_code not in (200, 204):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+
+    return {"detail": "Acesso deletado com sucesso"}
+
+
 @app.get("/usuarios")
 async def listar_usuarios(payload: dict = Depends(verificar_token)):
     async with httpx.AsyncClient() as client:
@@ -138,6 +166,7 @@ async def listar_usuarios(payload: dict = Depends(verificar_token)):
         usuarios = r.json()
         # Se você quiser, pode filtrar campos aqui — por enquanto retorna tudo
         return usuarios
+
 
 @app.post("/criar_usuario")
 async def criar_usuario(
