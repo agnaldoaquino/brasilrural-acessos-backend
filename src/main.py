@@ -144,9 +144,14 @@ async def criar_acesso(acesso: AcessoCreate, payload: dict = Depends(verificar_t
 @app.delete("/acessos/{id}")
 async def deletar_acesso(id: str, payload: dict = Depends(verificar_token)):
     async with httpx.AsyncClient() as client:
-        r = await client.delete(
-    f"{SUPABASE_ACESSOS_URL}?id=eq.{id}",
-    headers={**HEADERS, "Prefer": "return=representation"}
+        r = await client.request(
+    "DELETE",
+    SUPABASE_ACESSOS_URL,
+    headers={
+        **HEADERS,
+        "Prefer": "return=representation"
+    },
+    params={"id": f"eq.{id}"}
 )
 
     if r.status_code not in (200, 204):
