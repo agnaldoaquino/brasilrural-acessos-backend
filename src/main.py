@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from jwt.exceptions import InvalidTokenError
 from models import AcessoUpdate
 from uuid import UUID
-from src.models import AcessoCreate, AcessoUpdate
+from .models import AcessoCreate, AcessoUpdate
 
 load_dotenv()
 
