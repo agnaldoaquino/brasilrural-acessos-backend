@@ -10,6 +10,7 @@ from datetime import datetime, timedelta
 from jwt.exceptions import InvalidTokenError
 from uuid import UUID
 from src.models import AcessoCreate, AcessoUpdate
+from src.models import EmailCreate, EmailUpdate
 
 load_dotenv()
 
@@ -234,3 +235,74 @@ async def listar_historico_email(email_id: str, payload: dict = Depends(verifica
         return resposta.json()
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+SUPABASE_EMAILS_URL = os.getenv("SUPABASE_EMAILS_URL")  # tabela: emails_corporativos
+SUPABASE_EMAILS_HISTORICO_URL = os.getenv("SUPABASE_EMAILS_HISTORICO_URL")  # tabela: emails_historico
+
+if not SUPABASE_EMAILS_URL or not SUPABASE_EMAILS_HISTORICO_URL:
+    raise ValueError("⚠️ Defina SUPABASE_EMAILS_URL e SUPABASE_EMAILS_HISTORICO_URL no .env")
+
+@app.get("/emails")
+async def listar_emails(payload: dict = Depends(verificar_token)):
+    async with httpx.AsyncClient() as client:
+        r = await client.get(SUPABASE_EMAILS_URL, headers=HEADERS)
+        if r.status_code != 200:
+            raise HTTPException(status_code=r.status_code, detail=r.text)
+        return r.json()
+
+@app.post("/emails")
+async def criar_email(request: Request, payload: dict = Depends(verificar_token)):
+    body = await request.json()
+    async with httpx.AsyncClient() as client:
+        r = await client.post(
+            SUPABASE_EMAILS_URL,
+            headers={**HEADERS, "Prefer": "return=representation"},
+            json=body
+        )
+    if r.status_code != 201:
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return r.json()
+
+@app.put("/emails/{id}")
+async def atualizar_email(id: str, request: Request, payload: dict = Depends(verificar_token)):
+    dados = await request.json()
+
+    # Registrar histórico antes de atualizar
+    historico = {
+        "email_id": id,
+        "responsavel": dados.get("responsavel", ""),
+        "data_inicio": datetime.utcnow().isoformat()
+    }
+
+    async with httpx.AsyncClient() as client:
+        historico_res = await client.post(
+            SUPABASE_EMAILS_HISTORICO_URL,
+            headers={**HEADERS, "Prefer": "return=representation"},
+            json=historico
+        )
+        if historico_res.status_code not in (200, 201):
+            raise HTTPException(status_code=500, detail="Erro ao salvar histórico")
+
+        r = await client.patch(
+            f"{SUPABASE_EMAILS_URL}?id=eq.{id}",
+            headers={**HEADERS, "Prefer": "return=representation"},
+            params={"id": f"eq.{id}"},
+            json=dados
+        )
+        if r.status_code not in (200, 204):
+            raise HTTPException(status_code=r.status_code, detail=r.text)
+
+        return r.json() if r.status_code == 200 else {"detail": "Atualizado com sucesso"}
+
+@app.delete("/emails/{id}")
+async def deletar_email(id: str, payload: dict = Depends(verificar_token)):
+    async with httpx.AsyncClient() as client:
+        r = await client.request(
+            "DELETE",
+            SUPABASE_EMAILS_URL,
+            headers={**HEADERS, "Prefer": "return=representation"},
+            params={"id": f"eq.{id}"}
+        )
+    if r.status_code not in (200, 204):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return {"detail": "E-mail deletado com sucesso"}
