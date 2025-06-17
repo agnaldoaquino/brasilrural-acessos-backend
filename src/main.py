@@ -218,7 +218,7 @@ async def criar_usuario(
     return {"mensagem": "Usuário criado com sucesso"}
 
 @app.get("/historico-emails/{email_id}")
-async def listar_historico_email(email_id: str, token: str = Depends(verify_token)):
+async def listar_historico_email(email_id: str, payload: dict = Depends(verificar_token)):
     try:
         url = f"{SUPABASE_URL}/rest/v1/emails_historico?email_id=eq.{email_id}&order=data_inicio.asc"
         headers = {
