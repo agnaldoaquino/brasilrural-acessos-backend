@@ -216,3 +216,21 @@ async def criar_usuario(
             raise HTTPException(status_code=r.status_code, detail=r.text)
 
     return {"mensagem": "Usuário criado com sucesso"}
+
+@app.get("/historico-emails/{email_id}")
+async def listar_historico_email(email_id: str, token: str = Depends(verify_token)):
+    try:
+        url = f"{SUPABASE_URL}/rest/v1/emails_historico?email_id=eq.{email_id}&order=data_inicio.asc"
+        headers = {
+            "apikey": SUPABASE_KEY,
+            "Authorization": f"Bearer {SUPABASE_KEY}",
+            "Prefer": "return=representation"
+        }
+        resposta = httpx.get(url, headers=headers)
+
+        if resposta.status_code != 200:
+            raise HTTPException(status_code=500, detail="Erro ao buscar histórico")
+
+        return resposta.json()
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
