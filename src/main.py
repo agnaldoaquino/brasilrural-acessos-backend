@@ -231,6 +231,41 @@ async def deletar_usuario(id: str, payload: dict = Depends(verificar_token)):
         raise HTTPException(status_code=r.status_code, detail=r.text)
     return {"detail": "Usuário deletado com sucesso"}
 
+@app.put("/usuarios/{id}")
+async def atualizar_usuario(
+    id: str,
+    dados: dict,
+    payload: dict = Depends(verificar_token)
+):
+    campos_para_atualizar = {}
+
+    if "username" in dados:
+        campos_para_atualizar["username"] = dados["username"]
+    if "email" in dados:
+        campos_para_atualizar["email"] = dados["email"]
+    if "cria_usuario" in dados:
+        campos_para_atualizar["cria_usuario"] = dados["cria_usuario"]
+
+    # Se senha foi enviada, hash novamente
+    if "password" in dados and dados["password"]:
+        hashed_pw = bcrypt.hashpw(dados["password"].encode("utf-8"), bcrypt.gensalt())
+        campos_para_atualizar["password"] = hashed_pw.decode("utf-8")
+
+    if not campos_para_atualizar:
+        raise HTTPException(status_code=400, detail="Nenhum campo enviado para atualizar.")
+
+    async with httpx.AsyncClient() as client:
+        r = await client.patch(
+            f"{SUPABASE_URL}?id=eq.{id}",
+            headers={**HEADERS, "Prefer": "return=representation"},
+            json=campos_para_atualizar,
+        )
+
+    if r.status_code not in (200, 204):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+
+    return {"detail": "Usuário atualizado com sucesso"}
+
 
 @app.get("/historico-emails/{email_id}")
 async def listar_historico_email(email_id: str, payload: dict = Depends(verificar_token)):
