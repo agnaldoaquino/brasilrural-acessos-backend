@@ -231,6 +231,7 @@ async def deletar_usuario(id: str, payload: dict = Depends(verificar_token)):
         raise HTTPException(status_code=r.status_code, detail=r.text)
     return {"detail": "Usuário deletado com sucesso"}
 
+
 @app.put("/usuarios/{id}")
 async def atualizar_usuario(
     id: str,
@@ -243,13 +244,37 @@ async def atualizar_usuario(
 
     body = await request.json()
 
+    # Verifica se está tentando usar email de outro usuário
+    email = body.get("email")
+    username = body.get("username")
+
+    if email or username:
+        async with httpx.AsyncClient() as client:
+            filtro = []
+            if email:
+                filtro.append(f"email=eq.{email}")
+            if username:
+                filtro.append(f"username=eq.{username}")
+            filtro_str = "&".join(filtro)
+            url = f"{SUPABASE_URL}?{filtro_str}"
+
+            r = await client.get(url, headers=HEADERS)
+            if r.status_code != 200:
+                raise HTTPException(status_code=500, detail="Erro ao consultar usuários existentes")
+            registros = r.json()
+
+        # Verifica se está tentando usar dados de outro usuário
+        for usuario in registros:
+            if usuario["id"] != id:
+                raise HTTPException(status_code=409, detail="E-mail ou nome de usuário já em uso.")
+
     # Se senha foi enviada, re-hash
     if body.get("password"):
         body["password"] = bcrypt.hashpw(
             body["password"].encode(), bcrypt.gensalt()
         ).decode()
 
-    # Remove campos vazios (para não sobrescrever com null)
+    # Remove campos vazios
     dados = {k: v for k, v in body.items() if v not in ("", None)}
 
     if not dados:
@@ -266,6 +291,7 @@ async def atualizar_usuario(
         raise HTTPException(status_code=r.status_code, detail=r.text)
 
     return r.json() if r.status_code == 200 else {"detail": "Usuário atualizado com sucesso"}
+
 
 
 @app.get("/historico-emails/{email_id}")
