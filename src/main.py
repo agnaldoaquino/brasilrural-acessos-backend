@@ -218,6 +218,20 @@ async def criar_usuario(
 
     return {"mensagem": "Usuário criado com sucesso"}
 
+@app.delete("/usuarios/{id}")
+async def deletar_usuario(id: str, payload: dict = Depends(verificar_token)):
+    async with httpx.AsyncClient() as client:
+        r = await client.request(
+            "DELETE",
+            SUPABASE_URL,
+            headers={**HEADERS, "Prefer": "return=representation"},
+            params={"id": f"eq.{id}"}
+        )
+    if r.status_code not in (200, 204):
+        raise HTTPException(status_code=r.status_code, detail=r.text)
+    return {"detail": "Usuário deletado com sucesso"}
+
+
 @app.get("/historico-emails/{email_id}")
 async def listar_historico_email(email_id: str, payload: dict = Depends(verificar_token)):
     try:
