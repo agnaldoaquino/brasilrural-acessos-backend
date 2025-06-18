@@ -234,37 +234,38 @@ async def deletar_usuario(id: str, payload: dict = Depends(verificar_token)):
 @app.put("/usuarios/{id}")
 async def atualizar_usuario(
     id: str,
-    dados: dict,
+    request: Request,
     payload: dict = Depends(verificar_token)
 ):
-    campos_para_atualizar = {}
+    # Verifica permissão
+    if not payload.get("cria_usuario"):
+        raise HTTPException(status_code=403, detail="Sem permissão para editar usuários.")
 
-    if "username" in dados:
-        campos_para_atualizar["username"] = dados["username"]
-    if "email" in dados:
-        campos_para_atualizar["email"] = dados["email"]
-    if "cria_usuario" in dados:
-        campos_para_atualizar["cria_usuario"] = dados["cria_usuario"]
+    body = await request.json()
 
-    # Se senha foi enviada, hash novamente
-    if "password" in dados and dados["password"]:
-        hashed_pw = bcrypt.hashpw(dados["password"].encode("utf-8"), bcrypt.gensalt())
-        campos_para_atualizar["password"] = hashed_pw.decode("utf-8")
+    # Se senha foi enviada, re-hash
+    if body.get("password"):
+        body["password"] = bcrypt.hashpw(
+            body["password"].encode(), bcrypt.gensalt()
+        ).decode()
 
-    if not campos_para_atualizar:
-        raise HTTPException(status_code=400, detail="Nenhum campo enviado para atualizar.")
+    # Remove campos vazios (para não sobrescrever com null)
+    dados = {k: v for k, v in body.items() if v not in ("", None)}
+
+    if not dados:
+        raise HTTPException(status_code=422, detail="Nenhum campo válido para atualizar.")
 
     async with httpx.AsyncClient() as client:
         r = await client.patch(
             f"{SUPABASE_URL}?id=eq.{id}",
             headers={**HEADERS, "Prefer": "return=representation"},
-            json=campos_para_atualizar,
+            json=dados
         )
 
     if r.status_code not in (200, 204):
         raise HTTPException(status_code=r.status_code, detail=r.text)
 
-    return {"detail": "Usuário atualizado com sucesso"}
+    return r.json() if r.status_code == 200 else {"detail": "Usuário atualizado com sucesso"}
 
 
 @app.get("/historico-emails/{email_id}")
